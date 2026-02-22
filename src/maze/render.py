@@ -3,36 +3,58 @@ Author: Priyansh Nayak
 Description: ASCII rendering utilities for visualising the maze
 """
 
-def render_ascii(maze) -> None:
+
+def render_ascii(maze, path=None) -> None:
     """
     Render the maze in ASCII form.
 
-    Uses:
-    '_' for bottom walls
-    '|' for vertical walls
+    Symbols:
+    S = start
+    G = goal
+    . = solution path
+    _ = bottom walls
+    | = vertical walls
     spaces for open corridors
     """
-
     h, w = maze.height, maze.width
-
-    # Draw top border
-    print(" " + "_" * (w * 2 - 1))
-
-    # Draw each row of the maze
+    path = set(path or [])
+    # draw top border
+    print(" " + "_" * (2 * w - 1))
     for r in range(h):
-        line = "|"
-
+        # line with vertical walls + symbols
+        line1 = "|"
+        # line with bottom walls
+        line2 = "|"
         for c in range(w):
-            # Bottom wall (South)
-            if maze.has_wall((r, c), "S"):
-                line += "_"
+            cell = (r, c)
+            # choose interior symbol
+            if cell == maze.start:
+                symbol = "S"
+            elif cell == maze.goal:
+                symbol = "G"
+            elif cell in path:
+                symbol = "."
             else:
-                line += " "
+                symbol = " "
 
-            # Right wall (East)
-            if maze.has_wall((r, c), "E"):
-                line += "|"
+            # upper line (cell interior + right wall)
+            line1 += symbol
+
+            if maze.has_wall(cell, "E"):
+                line1 += "|"
             else:
-                line += " "
+                line1 += " "
 
-        print(line)
+            # lower line (bottom wall + corner)
+            if maze.has_wall(cell, "S"):
+                line2 += "_"
+            else:
+                line2 += " "
+
+            if maze.has_wall(cell, "E"):
+                line2 += "|"
+            else:
+                line2 += " "
+
+        print(line1)
+        print(line2)
