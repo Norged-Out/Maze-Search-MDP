@@ -53,4 +53,5 @@ def bfs_solver(maze):
         "nodes_expanded": nodes_expanded,
         "runtime": runtime,
         "memory": memory_usage,
+        "explored": visited,
     }

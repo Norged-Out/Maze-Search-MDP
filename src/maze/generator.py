@@ -7,7 +7,7 @@ import random
 from src.maze.maze import Maze, DIRS, DELTAS
 
 
-def generate_maze(height: int, width: int, seed: int | None = None, extra_walls: int = 0) -> Maze:
+def generate_maze(height: int, width: int, seed: int | None = None, openness: float = 0.0) -> Maze:
     # seed for reproducibility 
     if seed is not None:
         random.seed(seed)
@@ -42,16 +42,25 @@ def generate_maze(height: int, width: int, seed: int | None = None, extra_walls:
             stack.pop() # dead end
 
     # add extra random connections to introduce loops
-    for _ in range(extra_walls):
-        r = random.randrange(height)
-        c = random.randrange(width)
-        d = random.choice(DIRS)
-
-        dr, dc = DELTAS[d]
-        nr, nc = r + dr, c + dc
-
-        # only carve if neighbor exists and wall is still present
-        if 0 <= nr < height and 0 <= nc < width and maze.has_wall((r, c), d):
-            maze.remove_wall((r, c), d)
+    if openness > 0:
+        possible_walls = []
+        # collect all removable interior walls
+        for r in range(height):
+            for c in range(width):
+                for d in DIRS:
+                    dr, dc = DELTAS[d]
+                    nr, nc = r + dr, c + dc
+                    # ensure neighbour exists
+                    if 0 <= nr < height and 0 <= nc < width:
+                        # only consider valid walls
+                        if maze.has_wall((r, c), d):
+                            possible_walls.append(((r, c), d))
+        # random distribution of open walls 
+        random.shuffle(possible_walls)
+        loops_to_add = int(len(possible_walls) * openness)
+        # add the alternate paths
+        for (cell, d) in possible_walls[:loops_to_add]:
+            if maze.has_wall(cell, d):
+                maze.remove_wall(cell, d)
 
     return maze

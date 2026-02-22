@@ -20,16 +20,12 @@ def astar_solver(maze, heuristic):
     start_time = time.perf_counter()
     start = maze.start
     goal = maze.goal
-    # tie breaker avoids comparing cells when f is equal
-    open_set = []
-    tie_breaker = 0
-    # g = best-known cost from start to cell
-    g = {start: 0}
-    # parent pointers for path reconstruction
-    parent = {}
-    # closed_set set tracks nodes we've fully expanded
-    closed_set = set()
-    # Metrics
+    open_set = [] # f = g + h
+    tie_breaker = 0 # avoids comparing cells when f is equal
+    g = {start: 0} # best-known cost from start to cell
+    parent = {} # for path reconstruction
+    closed_set = set() # tracks nodes fully expanded
+    # metrics
     nodes_expanded = 0
     memory_usage = 1
 
@@ -38,7 +34,7 @@ def astar_solver(maze, heuristic):
 
     while open_set:
         _, _, current = heapq.heappop(open_set)
-        # If we already expanded it via a better route, skip
+        # if already expanded it via a better route, skip
         if current in closed_set:
             continue
         closed_set.add(current)
@@ -47,19 +43,17 @@ def astar_solver(maze, heuristic):
             break
         for nbr in maze.neighbors(current):
             tentative_g = g[current] + 1  # each move costs 1
-
-            # If this route to nbr is better, record it
+            # if this route is better, record it
             if nbr not in g or tentative_g < g[nbr]:
                 g[nbr] = tentative_g
                 parent[nbr] = current
-
                 tie_breaker += 1
                 f = tentative_g + heuristic(nbr, goal)
                 heapq.heappush(open_set, (f, tie_breaker, nbr))
 
         memory_usage = max(memory_usage, len(open_set))
 
-    # Reconstruct path
+    # reconstruct path
     path = []
     if goal in closed_set:
         cur = goal
@@ -77,4 +71,5 @@ def astar_solver(maze, heuristic):
         "nodes_expanded": nodes_expanded,
         "runtime": runtime,
         "memory": memory_usage,
+        "explored": closed_set,
     }

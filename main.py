@@ -1,14 +1,12 @@
 from src.maze.generator import generate_maze
-from src.maze.render import render_ascii
+from src.maze.render import render_ascii, render_matplotlib
 from src.solvers.dfs import dfs_solver
 from src.solvers.bfs import bfs_solver
 from src.solvers.astar import astar_solver, manhattan, euclidean
 
-
-m = generate_maze(10, 10, seed=2, extra_walls=10)
-
-print("\nMaze:")
-render_ascii(m)
+print("Generating Maze...")
+m = generate_maze(50, 50, seed=200, openness=0.2)
+render_matplotlib(m)
 
 # ---- DFS ----
 dfs_result = dfs_solver(m)
@@ -19,7 +17,7 @@ print("Nodes expanded:", dfs_result["nodes_expanded"])
 print("Runtime:", dfs_result["runtime"])
 print("Memory:", dfs_result["memory"])
 
-render_ascii(m, dfs_result["path"])
+render_matplotlib(m, explored=dfs_result["explored"], path=dfs_result["path"], title="DFS")
 
 
 # ---- BFS ----
@@ -31,7 +29,7 @@ print("Nodes expanded:", bfs_result["nodes_expanded"])
 print("Runtime:", bfs_result["runtime"])
 print("Memory:", bfs_result["memory"])
 
-render_ascii(m, bfs_result["path"])
+render_matplotlib(m, explored=bfs_result["explored"], path=bfs_result["path"], title="BFS")
 
 
 # ---- A* Manhattan ----
@@ -43,7 +41,7 @@ print("Nodes expanded:", astar_m["nodes_expanded"])
 print("Runtime:", astar_m["runtime"])
 print("Memory:", astar_m["memory"])
 
-render_ascii(m, astar_m["path"])
+render_matplotlib(m, explored=astar_m["explored"], path=astar_m["path"], title="Manhattan")
 
 
 # ---- A* Euclidean ----
@@ -55,4 +53,4 @@ print("Nodes expanded:", astar_e["nodes_expanded"])
 print("Runtime:", astar_e["runtime"])
 print("Memory:", astar_e["memory"])
 
-render_ascii(m, astar_e["path"])
+render_matplotlib(m, explored=astar_e["explored"], path=astar_e["path"], title="Euclid")
