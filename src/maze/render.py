@@ -24,43 +24,27 @@ def render_ascii(maze, path=None) -> None:
     # draw top border
     print(" " + "_" * (2 * w - 1))
     for r in range(h):
-        # line with vertical walls + symbols
-        line1 = "|"
-        # line with bottom walls
-        line2 = "|"
+        line = "|"
         for c in range(w):
             cell = (r, c)
             # choose interior symbol
-            if cell == maze.start:
-                symbol = "S"
-            elif cell == maze.goal:
-                symbol = "G"
-            elif cell in path:
+            if cell in path:
                 symbol = "."
             else:
                 symbol = " "
-
-            # upper line (cell interior + right wall)
-            line1 += symbol
-
+            # bottom wall
+            if cell in path:
+                line += symbol
+            elif maze.has_wall(cell, "S"):
+                line += "_"
+            else:
+                line += " "
+            # right wall
             if maze.has_wall(cell, "E"):
-                line1 += "|"
+                line += "|"
             else:
-                line1 += " "
-
-            # lower line (bottom wall + corner)
-            if maze.has_wall(cell, "S"):
-                line2 += "_"
-            else:
-                line2 += " "
-
-            if maze.has_wall(cell, "E"):
-                line2 += "|"
-            else:
-                line2 += " "
-
-        print(line1)
-        print(line2)
+                line += " "
+        print(line)
 
 
 def render_matplotlib(maze, path=None, explored=None, title="Maze"):

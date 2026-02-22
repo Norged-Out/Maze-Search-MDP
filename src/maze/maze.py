@@ -25,8 +25,8 @@ class Maze:
     height: int
     width: int
     start: Cell = (0, 0)
-    goal: Cell = None
-    walls: List[List[Dict[str, bool]]] = None
+    goal: Cell = None # type: ignore
+    walls: List[List[Dict[str, bool]]] = None  # type: ignore
 
     def __post_init__(self):
         if self.height <= 0 or self.width <= 0:
