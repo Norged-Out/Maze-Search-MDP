@@ -7,7 +7,7 @@ import random
 from src.maze.maze import Maze, DIRS, DELTAS
 
 
-def generate_maze(height: int, width: int, seed: int | None = None) -> Maze:
+def generate_maze(height: int, width: int, seed: int | None = None, extra_walls: int = 0) -> Maze:
     # seed for reproducibility 
     if seed is not None:
         random.seed(seed)
@@ -40,5 +40,18 @@ def generate_maze(height: int, width: int, seed: int | None = None) -> Maze:
             stack.append(nxt)
         else:
             stack.pop() # dead end
+
+    # add extra random connections to introduce loops
+    for _ in range(extra_walls):
+        r = random.randrange(height)
+        c = random.randrange(width)
+        d = random.choice(DIRS)
+
+        dr, dc = DELTAS[d]
+        nr, nc = r + dr, c + dc
+
+        # only carve if neighbor exists and wall is still present
+        if 0 <= nr < height and 0 <= nc < width and maze.has_wall((r, c), d):
+            maze.remove_wall((r, c), d)
 
     return maze
