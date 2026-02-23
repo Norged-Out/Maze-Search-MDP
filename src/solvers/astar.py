@@ -28,6 +28,7 @@ def astar_solver(maze, heuristic):
     # metrics
     nodes_expanded = 0
     memory_usage = 1
+    explored_order = [] # for pygame
 
     start_f = heuristic(start, goal)
     heapq.heappush(open_set, (start_f, tie_breaker, start))
@@ -39,6 +40,7 @@ def astar_solver(maze, heuristic):
             continue
         closed_set.add(current)
         nodes_expanded += 1
+        explored_order.append(current)
         if current == goal:
             break
         for nbr in maze.neighbors(current):
@@ -72,4 +74,5 @@ def astar_solver(maze, heuristic):
         "runtime": runtime,
         "memory": memory_usage,
         "explored": closed_set,
+        "explored_order": explored_order
     }

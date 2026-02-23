@@ -18,9 +18,12 @@ def dfs_solver(maze):
     nodes_expanded = 0
     memory_usage = 1
 
+    explored_order = [] # for pygame
+
     while stack:
         current = stack.pop()
         nodes_expanded += 1
+        explored_order.append(current)
 
         if current == goal:
             break
@@ -52,4 +55,5 @@ def dfs_solver(maze):
         "runtime": runtime,
         "memory": memory_usage,
         "explored": visited,
+        "explored_order": explored_order
     }

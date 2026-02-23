@@ -20,9 +20,12 @@ def bfs_solver(maze):
     nodes_expanded = 0
     memory_usage = 1
 
+    explored_order = [] # for pygame
+
     while queue:
         current = queue.popleft()  # FIFO
         nodes_expanded += 1
+        explored_order.append(current)
 
         if current == goal:
             break
@@ -54,4 +57,5 @@ def bfs_solver(maze):
         "runtime": runtime,
         "memory": memory_usage,
         "explored": visited,
+        "explored_order": explored_order
     }
