@@ -165,46 +165,119 @@ def update_animation(path, explored_order, explored_set, path_set, step, mode, s
 def run_game():
     pygame.init()
 
-    # demo parameters (change these)
-    size = 20
-    seed = 1
-    openness = 0.1
-    algo = "BFS"  # DFS, BFS, A*_Manhattan, A*_Euclidean, Value_Iteration, Policy_Iteration
+    # -------------------------
+    # Application State
+    # -------------------------
+    state = {
+        "size": 20,
+        "seed": 1,
+        "openness": 0.1,
+        "algo": "BFS",
 
-    maze = generate_maze(size, size, seed=seed, openness=openness)
-    path, explored_order, metrics = run_solver(maze, algo)
-    def rerun_solver():
-        nonlocal maze, path, explored_order, metrics
-        nonlocal explored_set, path_set, step, mode
+        "maze": None,
+        "path": [],
+        "explored_order": [],
+        "metrics": {},
 
-        maze = generate_maze(size, size, seed=seed, openness=openness)
-        path, explored_order, metrics = run_solver(maze, algo)
+        "explored_set": set(),
+        "path_set": set(),
 
-        explored_set.clear()
-        path_set.clear()
-        step = 0
-        mode = "explore"
+        "step": 0,
+        "mode": "explore",
+        "speed": 20,
+    }
 
-    # fullscreen window
+    # -------------------------
+    # Window Setup
+    # -------------------------
     info = pygame.display.Info()
     screen_w, screen_h = info.current_w, info.current_h
     screen = pygame.display.set_mode((screen_w, screen_h), pygame.FULLSCREEN)
     pygame.display.set_caption("Maze Demo")
 
-    # gui manager
     manager = pygame_gui.UIManager((screen_w, screen_h))
 
-    # sidebar panel
+    # -------------------------
+    # Sidebar UI
+    # -------------------------
     sidebar_w = 320
     panel = pygame_gui.elements.UIPanel(
         relative_rect=pygame.Rect(0, 0, sidebar_w, screen_h),
         manager=manager,
     )
+
     pad = 20
     y = pad
 
-    # solver label
-    solver_label = pygame_gui.elements.UILabel(
+    # ---- Maze Parameters ----
+
+    # Size label
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Maze Size (N x N)",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    # Size input
+    size_input = pygame_gui.elements.UITextEntryLine(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 32),
+        manager=manager,
+        container=panel,
+    )
+    size_input.set_text(str(state["size"]))
+    y += 50
+
+    # Seed label
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Seed",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    # Seed input
+    seed_input = pygame_gui.elements.UITextEntryLine(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 32),
+        manager=manager,
+        container=panel,
+    )
+    seed_input.set_text(str(state["seed"]))
+    y += 50
+
+    # Openness label
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Openness (0.0 - 0.3)",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    # Openness slider (0–30 mapped to 0.00–0.30)
+    openness_slider = pygame_gui.elements.UIHorizontalSlider(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        start_value=int(state["openness"] * 100),
+        value_range=(0, 30),
+        manager=manager,
+        container=panel,
+    )
+    y += 50
+
+    # Generate button
+    generate_button = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 40),
+        text="Generate Maze",
+        manager=manager,
+        container=panel,
+    )
+    y += 60
+
+    # ---- Solver Section ----
+
+    pygame_gui.elements.UILabel(
         relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
         text="Solver",
         manager=manager,
@@ -212,81 +285,164 @@ def run_game():
     )
     y += 30
 
-    # solver dropdown
     solver_dropdown = pygame_gui.elements.UIDropDownMenu(
-        options_list = list(ALGOS),
-        starting_option=algo,
+        options_list=list(ALGOS),
+        starting_option=state["algo"],
         relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 36),
         manager=manager,
         container=panel,
     )
     y += 50
 
-    # run button
     run_button = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 40),
-        text="Run",
+        text="Run Solver",
         manager=manager,
         container=panel,
     )
 
-    # maze drawing area (everything to the right of sidebar)
+    # -------------------------
+    # Canvas
+    # -------------------------
     canvas_rect = pygame.Rect(sidebar_w, 0, screen_w - sidebar_w, screen_h)
 
     font = pygame.font.SysFont(None, 22)
     clock = pygame.time.Clock()
-    time_delta = 0
 
-    explored_set = set()
-    path_set = set()
+    # -------------------------
+    # Helper Functions
+    # -------------------------
 
-    # animation state
-    step = 0
-    mode = "explore"  # explore -> path -> done
-    speed = 20        # explored cells per second-ish
+    def reset_animation():
+        state["explored_set"].clear()
+        state["path_set"].clear()
+        state["step"] = 0
+        state["mode"] = "explore"
 
+    def generate_maze_only():
+        state["maze"] = generate_maze(
+            state["size"],
+            state["size"],
+            seed=state["seed"],
+            openness=state["openness"],
+        )
+
+        state["path"] = []
+        state["explored_order"] = []
+        state["metrics"] = {}
+        reset_animation()
+
+    def rerun_solver():
+        if state["maze"] is None:
+            return
+
+        path, explored, metrics = run_solver(
+            state["maze"],
+            state["algo"],
+        )
+
+        state["path"] = path
+        state["explored_order"] = explored
+        state["metrics"] = metrics
+
+        reset_animation()
+
+    # -------------------------
+    # Main Loop
+    # -------------------------
     running = True
     while running:
         time_delta = clock.tick(60) / 1000.0
+
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 running = False
 
-            # keyboard inputs
-            if event.type == pygame.KEYDOWN:       
-                # esc to stop
+            # Keyboard Controls
+            if event.type == pygame.KEYDOWN:
+
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                # toggle pause by setting speed to 0 / restoring
-                elif event.key == pygame.K_SPACE:
-                    speed = 0 if speed > 0 else 20                
-                # quick restart animation
-                elif event.key == pygame.K_r:
-                    explored_set.clear()
-                    path_set.clear()
-                    step = 0
-                    mode = "explore"
-                    speed = 20
 
-            # run solver
+                elif event.key == pygame.K_SPACE:
+                    state["speed"] = 0 if state["speed"] > 0 else 20
+
+                elif event.key == pygame.K_r:
+                    reset_animation()
+
+            # Button Events
             if event.type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_element == run_button:
+
+                if event.ui_element == generate_button:
+                    # update state from UI
+                    try:
+                        state["size"] = max(2, min(50, int(size_input.get_text())))
+                    except:
+                        state["size"] = 20
+                        size_input.set_text("20")
+
+                    try:
+                        state["seed"] = int(seed_input.get_text())
+                    except:
+                        state["seed"] = 1
+                        seed_input.set_text("1")
+
+                    state["openness"] = openness_slider.get_current_value() / 100.0
+
+                    generate_maze_only()
+
+                elif event.ui_element == run_button:
                     selected = solver_dropdown.selected_option
-                    algo = selected[0] if isinstance(selected, tuple) else selected
+                    state["algo"] = selected[0] if isinstance(selected, tuple) else selected
                     rerun_solver()
 
             manager.process_events(event)
 
-        # advance animation
-        step, mode = update_animation(
-            path, explored_order, explored_set,
-            path_set, step, mode, speed
-        )
+        # -------------------------
+        # Animation Update
+        # -------------------------
+        if state["maze"] is not None:
+            state["step"], state["mode"] = update_animation(
+                state["path"],
+                state["explored_order"],
+                state["explored_set"],
+                state["path_set"],
+                state["step"],
+                state["mode"],
+                state["speed"],
+            )
 
-        # draw
+        # -------------------------
+        # Drawing
+        # -------------------------
         screen.fill((30, 30, 30))
-        draw_maze(screen, maze, canvas_rect,
-          explored_set, path_set)
+
+        if state["maze"] is not None:
+            draw_maze(
+                screen,
+                state["maze"],
+                canvas_rect,
+                state["explored_set"],
+                state["path_set"],
+            )
+
+        # Stats display (only after solve)
+        if state["metrics"]:
+            stats_y = 20
+            stats_x = sidebar_w + 20
+
+            lines = [
+                f"Moves: {max(0, len(state['path']) - 1)}",
+                f"Runtime: {state['metrics'].get('runtime', 0):.5f}",
+                f"Work: {state['metrics'].get('work', 0)}",
+                f"Memory: {state['metrics'].get('memory', 0)}",
+            ]
+
+            for line in lines:
+                text = font.render(line, True, (255, 255, 255))
+                screen.blit(text, (stats_x, stats_y))
+                stats_y += 24
 
         manager.update(time_delta)
         manager.draw_ui(screen)
