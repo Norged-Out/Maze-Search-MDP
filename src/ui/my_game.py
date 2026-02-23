@@ -129,8 +129,22 @@ def draw_maze(screen, maze, canvas_rect,
 
     pygame.draw.circle(screen, (0, 90, 255),
                        (sx, sy), max(3, cell_size // 4))
-    pygame.draw.circle(screen, (255, 120, 0),
-                       (gx, gy), max(3, cell_size // 4))
+    size = max(6, cell_size // 2)
+    pygame.draw.line(
+        screen,
+        (255, 120, 0),
+        (gx - size//2, gy - size//2),
+        (gx + size//2, gy + size//2),
+        3,
+    )
+
+    pygame.draw.line(
+        screen,
+        (255, 120, 0),
+        (gx - size//2, gy + size//2),
+        (gx + size//2, gy - size//2),
+        3,
+    )
 
 
 def update_animation(path, explored_order, explored_set, path_set, step, mode, speed):
@@ -185,6 +199,8 @@ def run_game():
         "step": 0,
         "mode": "explore",
         "speed": 20,
+
+        "gamma": 0.9,
     }
 
     # -------------------------
@@ -264,7 +280,7 @@ def run_game():
         manager=manager,
         container=panel,
     )
-    y += 50
+    y += 40
 
     # Generate button
     generate_button = pygame_gui.elements.UIButton(
@@ -273,7 +289,7 @@ def run_game():
         manager=manager,
         container=panel,
     )
-    y += 60
+    y += 50
 
     # ---- Solver Section ----
 
@@ -292,6 +308,23 @@ def run_game():
         manager=manager,
         container=panel,
     )
+    y += 40
+
+    # Gamma label
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Gamma (MDP only)",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    gamma_input = pygame_gui.elements.UITextEntryLine(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 32),
+        manager=manager,
+        container=panel,
+    )
+    gamma_input.set_text("0.9")
     y += 50
 
     run_button = pygame_gui.elements.UIButton(
@@ -300,13 +333,33 @@ def run_game():
         manager=manager,
         container=panel,
     )
+    y += 60
+
+    # ---- Stats Section ----
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Stats",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    stats_box = pygame_gui.elements.UITextBox(
+        html_text="No solution yet.",
+        relative_rect=pygame.Rect(
+            pad,
+            y,
+            sidebar_w - 2 * pad,
+            screen_h - y - 20
+        ),
+        manager=manager,
+        container=panel,
+    )
 
     # -------------------------
     # Canvas
     # -------------------------
     canvas_rect = pygame.Rect(sidebar_w, 0, screen_w - sidebar_w, screen_h)
-
-    font = pygame.font.SysFont(None, 22)
     clock = pygame.time.Clock()
 
     # -------------------------
@@ -339,6 +392,7 @@ def run_game():
         path, explored, metrics = run_solver(
             state["maze"],
             state["algo"],
+            gamma=state["gamma"],
         )
 
         state["path"] = path
@@ -346,6 +400,37 @@ def run_game():
         state["metrics"] = metrics
 
         reset_animation()
+
+        # build stats text
+        moves = max(0, len(state["path"]) - 1)
+
+        lines = [
+            f"<b>Algorithm:</b> {state['algo']}",
+            f"<b>Moves:</b> {moves}",
+        ]
+
+        if "runtime" in state["metrics"]:
+            lines.append(f"<b>Runtime:</b> {state['metrics']['runtime']:.6f}s")
+
+        if "nodes_expanded" in state["metrics"]:
+            lines.append(f"<b>Nodes Expanded:</b> {state['metrics']['nodes_expanded']}")
+
+        if "state_updates" in state["metrics"]:
+            lines.append(f"<b>State Updates:</b> {state['metrics']['state_updates']}")
+
+        if "memory" in state["metrics"]:
+            lines.append(f"<b>Memory:</b> {state['metrics']['memory']}")
+
+        if "iterations" in state["metrics"]:
+            lines.append(f"<b>Iterations:</b> {state['metrics']['iterations']}")
+
+        if "policy_iterations" in state["metrics"]:
+            lines.append(f"<b>Policy Iterations:</b> {state['metrics']['policy_iterations']}")
+
+        if "evaluation_iterations" in state["metrics"]:
+            lines.append(f"<b>Eval Iterations:</b> {state['metrics']['evaluation_iterations']}")
+
+        stats_box.set_text("<br>".join(lines))
 
     # -------------------------
     # Main Loop
@@ -393,6 +478,12 @@ def run_game():
                     generate_maze_only()
 
                 elif event.ui_element == run_button:
+                    try:
+                        g = float(gamma_input.get_text())
+                        state["gamma"] = max(0.0, min(0.999, g))
+                    except:
+                        state["gamma"] = 0.9
+                        gamma_input.set_text("0.9")
                     selected = solver_dropdown.selected_option
                     state["algo"] = selected[0] if isinstance(selected, tuple) else selected
                     rerun_solver()
@@ -426,23 +517,6 @@ def run_game():
                 state["explored_set"],
                 state["path_set"],
             )
-
-        # Stats display (only after solve)
-        if state["metrics"]:
-            stats_y = 20
-            stats_x = sidebar_w + 20
-
-            lines = [
-                f"Moves: {max(0, len(state['path']) - 1)}",
-                f"Runtime: {state['metrics'].get('runtime', 0):.5f}",
-                f"Work: {state['metrics'].get('work', 0)}",
-                f"Memory: {state['metrics'].get('memory', 0)}",
-            ]
-
-            for line in lines:
-                text = font.render(line, True, (255, 255, 255))
-                screen.blit(text, (stats_x, stats_y))
-                stats_y += 24
 
         manager.update(time_delta)
         manager.draw_ui(screen)
