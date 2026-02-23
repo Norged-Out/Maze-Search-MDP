@@ -35,6 +35,9 @@ def policy_iteration(maze, gamma=0.9, epsilon=1e-4):
     for state in maze.all_cells():
         V[state] = 0
 
+    goal_reward = 100
+    step_cost = -1
+
     policy_stable = False
     policy_iterations = 0
     evaluation_iterations = 0
@@ -55,7 +58,9 @@ def policy_iteration(maze, gamma=0.9, epsilon=1e-4):
                 if action is None:
                     continue
 
-                reward = -1
+                reward = step_cost
+                if action == maze.goal:
+                    reward = goal_reward
                 value = reward + gamma * V[action]
 
                 new_V[state] = value
@@ -82,7 +87,9 @@ def policy_iteration(maze, gamma=0.9, epsilon=1e-4):
             best_value = float("-inf")
 
             for next_state in neighbors:
-                reward = -1
+                reward = step_cost
+                if next_state == maze.goal:
+                    reward = goal_reward
                 value = reward + gamma * V[next_state]
 
                 if value > best_value:

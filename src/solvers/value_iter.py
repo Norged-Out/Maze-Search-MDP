@@ -15,6 +15,9 @@ def value_iteration(maze, gamma=0.9, epsilon=1e-4):
     for state in maze.all_cells():
         V[state] = 0
 
+    goal_reward = 100
+    step_cost = -1
+
     # metrics
     iterations = 0
     state_updates = 0
@@ -40,9 +43,9 @@ def value_iteration(maze, gamma=0.9, epsilon=1e-4):
 
             # Bellman update    
             for next_state in neighbors:
-                reward = -1  # step cost
-                # if next_state == maze.goal:
-                #     reward = 10  # goal reward
+                reward = step_cost
+                if next_state == maze.goal:
+                    reward = goal_reward
                 value = reward + gamma * V[next_state]
 
                 if value > best_value:
@@ -75,7 +78,9 @@ def value_iteration(maze, gamma=0.9, epsilon=1e-4):
         best_value = float("-inf")
 
         for next_state in neighbors:
-            reward = -1
+            reward = step_cost
+            if next_state == maze.goal:
+                reward = goal_reward
             value = reward + gamma * V[next_state]
 
             if value > best_value:
