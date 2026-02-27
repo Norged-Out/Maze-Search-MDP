@@ -258,6 +258,9 @@ src/
     experiments/
         runner.py
         analysis.py
+        samples.py
+    ui/
+        my_game.py
 
 figures/        # Generated plots
 results/        # CSV experiment outputs
@@ -304,7 +307,7 @@ The submission ZIP includes:
 
 ## Design Philosophy
 
-* Explicit algorithm implementations (no black-box libraries)
+* Explicit algorithm implementations
 * Reproducible experiments
 * Clear separation between search and MDP paradigms
 * Modular solver design
