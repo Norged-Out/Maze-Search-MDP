@@ -6,7 +6,7 @@ Description: MDP solver for Maze using Value Iteration
 import time
 
 
-def value_iteration(maze, gamma=0.9, epsilon=1e-4):
+def value_iteration(maze, gamma=0.9, goal_reward=100, step_cost=-1):
     # start timer
     start_time = time.time()
 
@@ -14,9 +14,6 @@ def value_iteration(maze, gamma=0.9, epsilon=1e-4):
     V = {}
     for state in maze.all_cells():
         V[state] = 0
-
-    goal_reward = 100
-    step_cost = -1
 
     # metrics
     iterations = 0
@@ -61,7 +58,7 @@ def value_iteration(maze, gamma=0.9, epsilon=1e-4):
         final_delta = delta
 
         # stop if change is very small
-        if delta < epsilon:
+        if delta < 1e-4:
             break
 
     # extract optimal policy from final values

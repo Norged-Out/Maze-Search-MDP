@@ -12,8 +12,14 @@ from src.solvers.policy_iter import policy_iteration
 from src.solvers.utils import extract_path
 
 
-def run_experiments(sizes, seeds, openness_levels, gamma=0.9, epsilon=1e-4):
-    # collect raw results (no printing, no rendering)
+def run_experiments(
+    sizes,
+    seeds,
+    openness_levels,
+    gammas=(0.9,),
+    goal_rewards=(100,),
+    step_costs=(-1,),
+):
     results = []
 
     for n in sizes:
@@ -29,6 +35,9 @@ def run_experiments(sizes, seeds, openness_levels, gamma=0.9, epsilon=1e-4):
                     "size": n,
                     "seed": seed,
                     "openness": openness,
+                    "gamma": "",
+                    "goal_reward": "",
+                    "step_cost": "",
                     "moves": dfs_res["moves"],
                     "runtime": dfs_res["runtime"],
                     "work": dfs_res["nodes_expanded"],
@@ -42,6 +51,9 @@ def run_experiments(sizes, seeds, openness_levels, gamma=0.9, epsilon=1e-4):
                     "size": n,
                     "seed": seed,
                     "openness": openness,
+                    "gamma": "",
+                    "goal_reward": "",
+                    "step_cost": "",
                     "moves": bfs_res["moves"],
                     "runtime": bfs_res["runtime"],
                     "work": bfs_res["nodes_expanded"],
@@ -55,6 +67,9 @@ def run_experiments(sizes, seeds, openness_levels, gamma=0.9, epsilon=1e-4):
                     "size": n,
                     "seed": seed,
                     "openness": openness,
+                    "gamma": "",
+                    "goal_reward": "",
+                    "step_cost": "",
                     "moves": am_res["moves"],
                     "runtime": am_res["runtime"],
                     "work": am_res["nodes_expanded"],
@@ -68,42 +83,68 @@ def run_experiments(sizes, seeds, openness_levels, gamma=0.9, epsilon=1e-4):
                     "size": n,
                     "seed": seed,
                     "openness": openness,
+                    "gamma": "",
+                    "goal_reward": "",
+                    "step_cost": "",
                     "moves": ae_res["moves"],
                     "runtime": ae_res["runtime"],
                     "work": ae_res["nodes_expanded"],
                     "memory": ae_res["memory"],
                 })
 
-                # ---- Value Iteration ----
-                vi_res = value_iteration(maze, gamma=gamma, epsilon=epsilon)
-                vi_path = extract_path(vi_res["policy"], maze.start, maze.goal)
-                results.append({
-                    "algorithm": "Value_Iteration",
-                    "size": n,
-                    "seed": seed,
-                    "openness": openness,
-                    "moves": max(0, len(vi_path) - 1),
-                    "runtime": vi_res["runtime"],
-                    "work": vi_res["state_updates"],
-                    "memory": vi_res["memory"],
-                    "iterations": vi_res["iterations"],
-                    "delta": vi_res["delta"],
-                })
+                # ---- MDP sweeps ----
+                for gamma in gammas:
+                    for goal_reward in goal_rewards:
+                        for step_cost in step_costs:
 
-                # ---- Policy Iteration ----
-                pi_res = policy_iteration(maze, gamma=gamma, epsilon=epsilon)
-                pi_path = extract_path(pi_res["policy"], maze.start, maze.goal)
-                results.append({
-                    "algorithm": "Policy_Iteration",
-                    "size": n,
-                    "seed": seed,
-                    "openness": openness,
-                    "moves": max(0, len(pi_path) - 1),
-                    "runtime": pi_res["runtime"],
-                    "work": pi_res["state_updates"],
-                    "memory": pi_res["memory"],
-                    "policy_iterations": pi_res["policy_iterations"],
-                    "evaluation_iterations": pi_res["evaluation_iterations"],
-                })
+                            # Value Iteration
+                            vi_res = value_iteration(
+                                maze,
+                                gamma=gamma,
+                                goal_reward=goal_reward,
+                                step_cost=step_cost,
+                            )
+                            vi_path = extract_path(vi_res["policy"], maze.start, maze.goal)
+
+                            results.append({
+                                "algorithm": "Value_Iteration",
+                                "size": n,
+                                "seed": seed,
+                                "openness": openness,
+                                "gamma": gamma,
+                                "goal_reward": goal_reward,
+                                "step_cost": step_cost,
+                                "moves": max(0, len(vi_path) - 1),
+                                "runtime": vi_res["runtime"],
+                                "work": vi_res["state_updates"],
+                                "memory": vi_res["memory"],
+                                "iterations": vi_res["iterations"],
+                                "delta": vi_res["delta"],
+                            })
+
+                            # Policy Iteration
+                            pi_res = policy_iteration(
+                                maze,
+                                gamma=gamma,
+                                goal_reward=goal_reward,
+                                step_cost=step_cost,
+                            )
+                            pi_path = extract_path(pi_res["policy"], maze.start, maze.goal)
+
+                            results.append({
+                                "algorithm": "Policy_Iteration",
+                                "size": n,
+                                "seed": seed,
+                                "openness": openness,
+                                "gamma": gamma,
+                                "goal_reward": goal_reward,
+                                "step_cost": step_cost,
+                                "moves": max(0, len(pi_path) - 1),
+                                "runtime": pi_res["runtime"],
+                                "work": pi_res["state_updates"],
+                                "memory": pi_res["memory"],
+                                "policy_iterations": pi_res["policy_iterations"],
+                                "evaluation_iterations": pi_res["evaluation_iterations"],
+                            })
 
     return results

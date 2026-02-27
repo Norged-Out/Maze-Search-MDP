@@ -6,7 +6,7 @@ Description: MDP solver for Maze using Policy Iteration
 import time
 
 
-def policy_iteration(maze, gamma=0.9, epsilon=1e-4):
+def policy_iteration(maze, gamma=0.9, goal_reward=100, step_cost=-1):
     # start timer
     start_time = time.time()
 
@@ -34,9 +34,6 @@ def policy_iteration(maze, gamma=0.9, epsilon=1e-4):
     V = {}
     for state in maze.all_cells():
         V[state] = 0
-
-    goal_reward = 100
-    step_cost = -1
 
     policy_stable = False
     policy_iterations = 0
@@ -70,7 +67,7 @@ def policy_iteration(maze, gamma=0.9, epsilon=1e-4):
             V = new_V
             evaluation_iterations += 1
 
-            if delta < epsilon:
+            if delta < 1e-4:
                 break
 
         # Policy Improvement

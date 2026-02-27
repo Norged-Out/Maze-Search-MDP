@@ -23,7 +23,7 @@ ALGOS = [
     "MDP: Policy Iteration",
 ]
 
-def run_solver(maze, algo, gamma=0.9, epsilon=1e-4):
+def run_solver(maze, algo, gamma=0.9, goal_reward=100, step_cost=-1):
     # returns: path (list), explored_order (list), metrics (dict)
     if algo == "DFS":
         res = dfs_solver(maze)
@@ -42,12 +42,12 @@ def run_solver(maze, algo, gamma=0.9, epsilon=1e-4):
         return res["path"], res.get("explored_order", []), res
 
     if algo == "MDP: Value Iteration":
-        res = value_iteration(maze, gamma=gamma, epsilon=epsilon)
+        res = value_iteration(maze, gamma=gamma, goal_reward=goal_reward, step_cost=step_cost)
         path = extract_path(res["policy"], maze.start, maze.goal)
         return path, [], res
 
     if algo == "MDP: Policy Iteration":
-        res = policy_iteration(maze, gamma=gamma, epsilon=epsilon)
+        res = policy_iteration(maze, gamma=gamma, goal_reward=goal_reward, step_cost=step_cost)
         path = extract_path(res["policy"], maze.start, maze.goal)
         return path, [], res
 
@@ -201,6 +201,8 @@ def run_game():
         "speed": 20,
 
         "gamma": 0.9,
+        "goal_reward": 100,
+        "step_cost": -1
     }
 
     # -------------------------
@@ -327,6 +329,40 @@ def run_game():
     gamma_input.set_text("0.9")
     y += 50
 
+        # Goal reward label
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Goal Reward (MDP only)",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    goal_reward_input = pygame_gui.elements.UITextEntryLine(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 32),
+        manager=manager,
+        container=panel,
+    )
+    goal_reward_input.set_text(str(state["goal_reward"]))
+    y += 50
+
+    # Step cost label
+    pygame_gui.elements.UILabel(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 24),
+        text="Step Cost (MDP only)",
+        manager=manager,
+        container=panel,
+    )
+    y += 30
+
+    step_cost_input = pygame_gui.elements.UITextEntryLine(
+        relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 32),
+        manager=manager,
+        container=panel,
+    )
+    step_cost_input.set_text(str(state["step_cost"]))
+    y += 50
+
     run_button = pygame_gui.elements.UIButton(
         relative_rect=pygame.Rect(pad, y, sidebar_w - 2 * pad, 40),
         text="Run Solver",
@@ -393,6 +429,8 @@ def run_game():
             state["maze"],
             state["algo"],
             gamma=state["gamma"],
+            goal_reward=state["goal_reward"],
+            step_cost=state["step_cost"],
         )
 
         state["path"] = path
@@ -484,6 +522,18 @@ def run_game():
                     except:
                         state["gamma"] = 0.9
                         gamma_input.set_text("0.9")
+                    try:
+                        gr = float(goal_reward_input.get_text())
+                        state["goal_reward"] = gr
+                    except:
+                        state["goal_reward"] = 100
+                        goal_reward_input.set_text("100")
+                    try:
+                        scost = float(step_cost_input.get_text())
+                        state["step_cost"] = scost
+                    except:
+                        state["step_cost"] = -1
+                        step_cost_input.set_text("-1")
                     selected = solver_dropdown.selected_option
                     state["algo"] = selected[0] if isinstance(selected, tuple) else selected
                     rerun_solver()
