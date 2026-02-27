@@ -51,13 +51,13 @@ def generate_samples():
                     title="Astar Euclidean (30x30)")
 
     # Value Iteration
-    res = value_iteration(maze)
+    res = value_iteration(maze, gamma=0.99)
     policy = res["policy"]
     path = extract_path(policy, maze.start, maze.goal)
     render_matplotlib(maze, path=path, policy=policy, title="Value Iteration Policy (30x30)")
 
     # Policy Iteration
-    res = policy_iteration(maze)
+    res = policy_iteration(maze, gamma=0.99)
     policy = res["policy"]
     path = extract_path(policy, maze.start, maze.goal)
     render_matplotlib(maze, path=path, policy=policy, title="Policy Iteration Policy (30x30)")
