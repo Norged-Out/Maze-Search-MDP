@@ -55,7 +55,8 @@ def run_solver(maze, algo, gamma=0.9, goal_reward=100, step_cost=-1):
 
 
 def draw_maze(screen, maze, canvas_rect,
-              explored_set, path_set):
+              explored_set, path_set,
+              policy=None, policy_visible=None):
 
     # canvas background
     pygame.draw.rect(screen, (245, 245, 245), canvas_rect)
@@ -83,6 +84,10 @@ def draw_maze(screen, maze, canvas_rect,
         y = y0 + r * cell_size
         pygame.draw.rect(screen, (180, 210, 235),
                          (x, y, cell_size, cell_size))
+    
+    # policy
+    if policy is not None and policy_visible:
+        draw_policy_arrows(screen, maze, x0, y0, cell_size, policy, policy_visible or set())
 
     # path
     for (r, c) in path_set:
@@ -147,7 +152,60 @@ def draw_maze(screen, maze, canvas_rect,
     )
 
 
-def update_animation(path, explored_order, explored_set, path_set, step, mode, speed):
+def draw_policy_arrows(screen, maze, x0, y0, cell_size, policy, visible_cells):
+    if not policy:
+        return
+
+    color = (90, 90, 90)
+
+    for (r, c) in visible_cells:
+        nxt = policy.get((r, c))
+        if nxt is None:
+            continue
+
+        nr, nc = nxt
+        dx = nc - c
+        dy = nr - r
+
+        cx = x0 + c * cell_size + cell_size // 2
+        cy = y0 + r * cell_size + cell_size // 2
+
+        shaft = cell_size * 0.18
+        head = cell_size * 0.26
+        wing = head * 0.55
+
+        # direction unit vector (ux, uy)
+        if dx == 1:   ux, uy = 1, 0
+        elif dx == -1: ux, uy = -1, 0
+        elif dy == 1:  ux, uy = 0, 1
+        elif dy == -1: ux, uy = 0, -1
+        else:
+            continue
+
+        # shaft end (where arrowhead starts)
+        sx = cx + int(ux * shaft)
+        sy = cy + int(uy * shaft)
+
+        # arrow tip
+        tx = cx + int(ux * (shaft + head))
+        ty = cy + int(uy * (shaft + head))
+
+        # perpendicular for wings
+        px, py = -uy, ux
+
+        left = (sx + int(px * wing), sy + int(py * wing))
+        right = (sx - int(px * wing), sy - int(py * wing))
+        tip = (tx, ty)
+
+        # line shaft
+        pygame.draw.line(screen, color, (cx, cy), (sx, sy), 2)
+        # triangle head
+        pygame.draw.polygon(screen, color, [tip, left, right])
+
+
+def update_animation(path, explored_order, explored_set, path_set,
+                     policy_order, policy_visible,
+                     step, mode, speed):
     if speed <= 0:
         return step, mode
 
@@ -166,6 +224,18 @@ def update_animation(path, explored_order, explored_set, path_set, step, mode, s
         else:
             mode = "path"
             step = 0
+
+    elif mode == "policy":
+        add_count = max(1, speed // 10)
+
+        for _ in range(add_count):
+            if step >= len(policy_order):
+                mode = "path"
+                step = 0
+                break
+
+            policy_visible.add(policy_order[step])
+            step += 1
 
     elif mode == "path":
         if step >= len(path):
@@ -202,7 +272,10 @@ def run_game():
 
         "gamma": 0.9,
         "goal_reward": 100,
-        "step_cost": -1
+        "step_cost": -1,
+        "policy": None,
+        "policy_order": [],
+        "policy_visible": set(),
     }
 
     # -------------------------
@@ -405,8 +478,13 @@ def run_game():
     def reset_animation():
         state["explored_set"].clear()
         state["path_set"].clear()
+        state["policy_visible"].clear()
         state["step"] = 0
-        state["mode"] = "explore"
+         # MDP: reveal policy first, then path
+        if state["policy"] is not None:
+            state["mode"] = "policy"
+        else:
+            state["mode"] = "explore"
 
     def generate_maze_only():
         state["maze"] = generate_maze(
@@ -419,6 +497,8 @@ def run_game():
         state["path"] = []
         state["explored_order"] = []
         state["metrics"] = {}
+        state["policy"] = None
+        state["policy_order"] = []
         reset_animation()
 
     def rerun_solver():
@@ -436,6 +516,14 @@ def run_game():
         state["path"] = path
         state["explored_order"] = explored
         state["metrics"] = metrics
+        state["policy"] = metrics.get("policy", None)
+
+        # simple reveal order for policy animation
+        if state["policy"]:
+            h, w = state["maze"].height, state["maze"].width
+            state["policy_order"] = [(r, c) for r in range(h) for c in range(w)]
+        else:
+            state["policy_order"] = []
 
         reset_animation()
 
@@ -549,6 +637,8 @@ def run_game():
                 state["explored_order"],
                 state["explored_set"],
                 state["path_set"],
+                state["policy_order"],
+                state["policy_visible"],
                 state["step"],
                 state["mode"],
                 state["speed"],
@@ -566,6 +656,8 @@ def run_game():
                 canvas_rect,
                 state["explored_set"],
                 state["path_set"],
+                policy=state["policy"],
+                policy_visible=state["policy_visible"],
             )
 
         manager.update(time_delta)

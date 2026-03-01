@@ -104,7 +104,8 @@ You will see:
 
 Launches an interactive graphical demo.
 
-* Generates maze
+* Generates maze of different sizes
+* Adjust openness, seed, and MDP parameters
 * Runs selected solver
 * Visualises exploration and final path
 * Used for demonstration video
@@ -133,9 +134,10 @@ Includes:
 
 Runs automated performance experiments across:
 
-* Multiple maze sizes
-* Multiple openness levels
+* Maze sizes: 10×10 to 50×50
 * Multiple random seeds
+* Multiple openness levels
+* Multiple gamma values (MDP)
 
 Outputs CSV files to:
 
@@ -147,9 +149,11 @@ Metrics recorded:
 
 * Runtime
 * Nodes expanded
-* Maximum data structure size
+* Memory usage
 * Iterations (MDP)
 * State updates (MDP)
+
+All results are averaged over multiple seeds during analysis.
 
 ---
 
@@ -237,6 +241,62 @@ Path extraction for MDP methods:
 from src.solvers.utils import extract_path
 path = extract_path(policy, maze.start, maze.goal)
 ```
+
+---
+
+## Rendering Mazes (Matplotlib)
+
+Rendering utilities are located in:
+
+```
+src/maze/render.py
+```
+
+Examples:
+
+### Render Unsolved Maze
+
+```python
+from src.maze.render import render_matplotlib
+render_matplotlib(maze, title="Unsolved Maze")
+```
+
+### Render Search Solution
+
+```python
+from src.solvers.bfs import bfs_solver
+from src.maze.render import render_matplotlib
+
+res = bfs_solver(maze)
+
+render_matplotlib(
+    maze,
+    path=res["path"],
+    explored=res["explored"],
+    title="BFS Solution"
+)
+```
+
+### Render MDP Policy
+
+```python
+from src.solvers.value_iter import value_iteration
+from src.solvers.utils import extract_path
+from src.maze.render import render_matplotlib
+
+res = value_iteration(maze, gamma=0.99)
+policy = res["policy"]
+path = extract_path(policy, maze.start, maze.goal)
+
+render_matplotlib(
+    maze,
+    path=path,
+    policy=policy,
+    title="Value Iteration Policy"
+)
+```
+
+If `policy` is provided, a directional overlay is displayed for all states.
 
 ---
 

@@ -101,6 +101,7 @@ if __name__ == "__main__":
         choice = input("Enter choice: ").strip()
         if choice == "1":            
             run_game()
+            break
         elif choice == "2":
             generate_samples()
         elif choice == "3":

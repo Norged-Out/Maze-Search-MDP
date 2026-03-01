@@ -77,7 +77,7 @@ def generate_samples():
             maze,
             path=path,
             explored=explored,
-            title=f"Astar Manhattan Size {size}x{size})"
+            title=f"Astar Manhattan Size {size}x{size}"
         )
 
 
