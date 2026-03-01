@@ -1,4 +1,4 @@
-# Maze_Search_MDP
+# Maze Solver
 
 Implementation and comparative analysis of classical search algorithms and Markov Decision Process (MDP) methods for maze solving.
 
